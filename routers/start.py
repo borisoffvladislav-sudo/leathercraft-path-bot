@@ -53,7 +53,7 @@ def get_registration_keyboard():
 def get_existing_players_keyboard():
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="▶️ Продолжить играть", callback_data="continue_playing")],
+        [InlineKeyboardButton(text="▶️ Продолжить играть", callback_data="continue_game")],
         [InlineKeyboardButton(text="➕ Создать нового", callback_data="create_new_character")],
         [InlineKeyboardButton(text="👤 Посмотреть профиль персонажа", callback_data="view_profile")]
     ])
