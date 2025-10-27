@@ -1297,3 +1297,77 @@ async def return_to_last_step(callback: CallbackQuery, state: FSMContext, player
     
     else:
         await start_tutorial(callback, state)
+# ✅ ДОБАВЛЯЕМ ОБРАБОТЧИК ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ ИГРАТЬ"
+@start_router.callback_query(lambda c: c.data == "continue_game")
+async def handle_continue_game(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    
+    print(f"🎯 ОТЛАДКА: Обработка continue_game для user_id {user_id}")
+    
+    try:
+        # 1. Получаем активного персонажа
+        active_player = db.get_active_player(user_id)
+        if not active_player:
+            await callback.answer("❌ Персонаж не найден")
+            return
+        
+        player_id = active_player[0]
+        
+        # 2. Проверяем прогресс обучения
+        from database.models import TutorialDatabase
+        tutorial_db = TutorialDatabase()
+        
+        progress = tutorial_db.get_tutorial_progress(player_id)
+        
+        if not progress:
+            # Прогресса нет - начинаем обучение заново
+            print(f"🎯 ОТЛАДКА: Прогресс не найден, начинаем обучение")
+            await callback.answer()
+            await start_tutorial(callback, state)
+            return
+        
+        current_step = progress[1]
+        player_balance = progress[2]
+        
+        print(f"🎯 ОТЛАДКА: Текущий этап: {current_step}, баланс: {player_balance}")
+        
+        # 3. Если обучение завершено - переходим к основной игре
+        if current_step == "completed":
+            print(f"🎯 ОТЛАДКА: Обучение завершено, переходим к основной игре")
+            await callback.answer("🎉 Обучение завершено! Переходим к игре...")
+            # Здесь будет переход к основной игре
+            await callback.message.answer("🏭 Добро пожаловать в основную игру!")
+            return
+        
+        # 4. Если обучение не завершено - восстанавливаем
+        print(f"🎯 ОТЛАДКА: Восстанавливаем обучение на этапе: {current_step}")
+        
+        # Очищаем текущее состояние чтобы избежать конфликтов
+        await state.clear()
+        
+        # Показываем сообщение о восстановлении
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+        
+        await callback.message.answer(
+            f"🔄 Возвращаемся к обучению!\n"
+            f"💰 Баланс: {player_balance} монет\n\n"
+            f"Мы восстановили твой прогресс. Продолжаем!",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="➡️ Продолжить обучение", 
+                    callback_data=f"restore_tutorial_{player_id}"
+                )
+            ]])
+        )
+        await callback.answer()
+        
+    except Exception as e:
+        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА: {e}")
+        # Аварийный выход - показываем меню выбора
+        from routers.start import get_existing_players_keyboard
+        await callback.message.answer(
+            "⚠️ Произошла ошибка при загрузке прогресса\n\n"
+            "Выбери действие:",
+            reply_markup=get_existing_players_keyboard()
+        )
+        await callback.answer()
