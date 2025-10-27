@@ -4776,3 +4776,79 @@ async def update_shop_category_message(callback: CallbackQuery, category: str, b
         reply_markup=keyboard
     )
 
+# 🔄 УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ВОССТАНОВЛЕНИЯ
+@tutorial_router.callback_query(lambda c: c.data.startswith("restore_tutorial_"))
+async def handle_restore_tutorial(callback: CallbackQuery, state: FSMContext):
+    """Универсальное восстановление прогресса - ПОЛНОСТЬЮ МАСШТАБИРУЕМОЕ"""
+    try:
+        player_id = int(callback.data.split("_")[2])
+        print(f"🎯 ОТЛАДКА: Восстановление для player_id {player_id}")
+        
+        from database.models import TutorialDatabase
+        tutorial_db = TutorialDatabase()
+        progress = tutorial_db.get_tutorial_progress(player_id)
+        
+        if not progress:
+            await callback.answer("❌ Прогресс не найден")
+            return
+            
+        current_step = progress[1]
+        print(f"🎯 ОТЛАДКА: Восстанавливаем этап: {current_step}")
+        
+        # ✅ АВТОМАТИЧЕСКОЕ СОООБЩЕНИЕ ДЛЯ ЛЮБОГО СОСТОЯНИЯ
+        generic_messages = {
+            "waiting_for_": "Используй доступные кнопки чтобы продолжить",
+            "in_shop_": "Выбери категорию или действие чтобы продолжить", 
+            "select_": "Сделай выбор чтобы продолжить",
+            "belt_": "Продолжи изготовление ремня",
+            "holder_": "Продолжи изготовление картхолдера",
+        }
+        
+        # Автоматически подбираем сообщение по префиксу
+        message = "Используй кнопки из предыдущих сообщений чтобы продолжить"
+        for prefix, msg in generic_messages.items():
+            if current_step.startswith(prefix):
+                message = msg
+                break
+        
+        # ✅ ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ С ПРОВЕРКОЙ
+        state_class = TutorialStates
+        if hasattr(state_class, current_step):
+            state_value = getattr(state_class, current_step)
+            if isinstance(state_value, State):
+                await state.set_state(state_value)
+                await state.update_data(player_id=player_id)
+                print(f"✅ Установлено состояние: {current_step}")
+                
+                await callback.message.answer(
+                    f"🔄 Прогресс восстановлен!\n"
+                    f"Продолжаем с того же места.\n\n"
+                    f"{message}"
+                )
+                await callback.answer("✅ Прогресс восстановлен!")
+                return
+        
+        # ❌ Если состояние не найдено - УМНЫЙ FALLBACK
+        print(f"⚠️ Состояние {current_step} не найдено, умный fallback")
+        
+        # Импортируем функции здесь, чтобы избежать циклических импортов
+        from routers.tutorial import start_tutorial
+        
+        # Определяем примерное место по названию состояния
+        if "shop" in current_step:
+            from routers.tutorial import enter_shop
+            await enter_shop(callback, state)  # Начинаем с магазина
+        elif "belt" in current_step:
+            from routers.tutorial import make_belt
+            await make_belt(callback, state)   # Начинаем с ремня
+        elif "holder" in current_step:
+            from routers.tutorial import start_holder_craft
+            await start_holder_craft(callback, state)  # Начинаем с картхолдера
+        else:
+            await start_tutorial(callback, state)  # Полный перезапуск
+            
+    except Exception as e:
+        print(f"❌ Ошибка восстановления: {e}")
+        await callback.answer("❌ Ошибка, начинаем заново")
+        from routers.tutorial import start_tutorial
+        await start_tutorial(callback, state)
