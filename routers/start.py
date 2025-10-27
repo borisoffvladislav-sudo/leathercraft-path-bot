@@ -1319,6 +1319,11 @@ async def handle_continue_game(callback: CallbackQuery, state: FSMContext):
         
         progress = tutorial_db.get_tutorial_progress(player_id)
         
+        # ✅ ДОБАВЛЯЕМ ОТЛАДОЧНУЮ ИНФОРМАЦИЮ В ПРАВИЛЬНОМ МЕСТЕ
+        print(f"🎯 ОТЛАДКА: Полный прогресс из БД: {progress}")
+        if progress:
+            print(f"🎯 ОТЛАДКА: Тип progress: {type(progress)}, Длина: {len(progress)}")
+        
         if not progress:
             # Прогресса нет - начинаем обучение заново
             print(f"🎯 ОТЛАДКА: Прогресс не найден, начинаем обучение")
@@ -1360,6 +1365,7 @@ async def handle_continue_game(callback: CallbackQuery, state: FSMContext):
             ]])
         )
         await callback.answer()
+        return  # ✅ ВАЖНО: Добавляем return здесь!
         
     except Exception as e:
         print(f"❌ КРИТИЧЕСКАЯ ОШИБКА: {e}")
