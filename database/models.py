@@ -15,6 +15,8 @@ class Database:
             cursor.execute('ALTER TABLE players ADD COLUMN gender TEXT NOT NULL DEFAULT "male"')
             print("✅ Добавлено поле gender в таблицу players")
         except sqlite3.OperationalError as e:
+            if "duplicate column" not in str(e):
+                raise e
             print(f"✅ Поле gender уже существует или ошибка: {e}")
         finally:
             conn.close()
