@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery, FSInputFile, InlineKeyboardBut
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from database.models import Database
+from database.models import Database, tutorial_db
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import Bot
 from aiogram.types import Message
@@ -54,7 +54,7 @@ async def set_stage_command(message: Message, state: FSMContext, bot: Bot):
             return
         
         # Обновляем прогресс
-        db.tutorial.update_tutorial_progress(player_id, stage_name)
+        tutorial_db.update_tutorial_progress(player_id, stage_name)
         
         # Очищаем состояние FSM
         await state.clear()
@@ -94,7 +94,7 @@ async def check_progress_command(message: Message):
         return
     
     player_id = active_player[0]
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     
     if progress:
         stage, step, completed, balance = progress
@@ -233,7 +233,7 @@ async def make_belt_handler(callback: CallbackQuery, state: FSMContext):
             return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_start")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_start")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -296,7 +296,7 @@ async def belt_prepare_materials(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_materials")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_materials")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -316,7 +316,7 @@ async def belt_prepare_materials(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     leather_items = [item[0] for item in inventory if "ременная" in item[0].lower()]
     
     print(f"🎒 ОТЛАДКА: Найдены кожи в инвентаре: {leather_items}")
@@ -325,17 +325,17 @@ async def belt_prepare_materials(callback: CallbackQuery, state: FSMContext):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     
     keyboard_buttons = []
-    for name in leather_items:
+    for item_name in leather_items:
         # ИСПРАВЛЕНИЕ: используем короткие callback_data
-        if name == "Дешевая ременная заготовка":
+        if item_name == "Дешевая ременная заготовка":
             callback_data = "select_leather_cheap"  # ✅ КОРОТКИЙ callback_data
         else:
             # Для других кож тоже используем короткие названия
-            short_name = name.lower().replace(' ', '_').replace('дешевая', 'cheap').replace('ременная', 'belt').replace('заготовка', 'leather')[:20]
+            short_name = item_name.lower().replace(' ', '_').replace('дешевая', 'cheap').replace('ременная', 'belt').replace('заготовка', 'leather')[:20]
             callback_data = f"select_leather_{short_name}"
         
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🧵 {name}", 
+            text=f"🧵 {item_name}", 
             callback_data=callback_data  # ✅ КОРОТКИЙ callback_data
         )])
     
@@ -411,7 +411,7 @@ async def select_belt_leather(callback: CallbackQuery, state: FSMContext):
     await state.update_data(selected_leather=leather_name)
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_leather")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_leather")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -424,7 +424,7 @@ async def select_belt_leather(callback: CallbackQuery, state: FSMContext):
     stage3_text = "Теперь выберите фурнитуру"
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     hardware_items = [item[0] for item in inventory if "фурнитура" in item[0].lower()]
     
     print(f"🎒 ОТЛАДКА: Найдена фурнитура в инвентаре: {hardware_items}")
@@ -433,15 +433,15 @@ async def select_belt_leather(callback: CallbackQuery, state: FSMContext):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     
     keyboard_buttons = []
-    for name in hardware_items:
+    for item_name in hardware_items:
         # Используем короткие callback_data для фурнитуры
-        if name == "Дешевая фурнитура для ремней":
+        if item_name == "Дешевая фурнитура для ремней":
             callback_data = "select_hardware_cheap"
         else:
-            callback_data = f"select_hardware_{name.replace(' ', '_').lower()[:15]}"
+            callback_data = f"select_hardware_{item_name.replace(' ', '_').lower()[:15]}"
         
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"📎 {name}", 
+            text=f"📎 {item_name}", 
             callback_data=callback_data
         )])
     
@@ -494,7 +494,7 @@ async def select_belt_hardware(callback: CallbackQuery, state: FSMContext):
     await state.update_data(selected_hardware=hardware_name)
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_hardware")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_hardware")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -551,7 +551,7 @@ async def belt_select_tools(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_tools")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_tools")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -560,15 +560,15 @@ async def belt_select_tools(callback: CallbackQuery, state: FSMContext):
         pass
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     
     # Фильтруем только инструменты
     tool_items = []
     for item in inventory:
-        name = item[0]
+        item_name = item[0]
         # Ищем инструменты по ключевым словам
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
-            tool_items.append(name)
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
+            tool_items.append(item_name)
     
     # Инициализируем список выбранных инструментов в состоянии
     await state.update_data(selected_tools=[])
@@ -651,12 +651,12 @@ async def toggle_tool_selection(callback: CallbackQuery, state: FSMContext):
     await state.update_data(selected_tools=selected_tools)
     
     # Получаем инвентарь игрока для обновления клавиатуры
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     tool_items = []
     for item in inventory:
-        name = item[0]
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
-            tool_items.append(name)
+        item_name = item[0]
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
+            tool_items.append(item_name)
     
     # Создаем обновленную клавиатуру
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -733,7 +733,7 @@ async def belt_tools_confirmed(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_assembly")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_assembly")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -790,7 +790,7 @@ async def belt_install_buckle(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_quality")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_quality")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -845,7 +845,7 @@ async def belt_evaluate_quality(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_belt_sleep")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_belt_sleep")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -917,7 +917,7 @@ async def belt_go_to_sleep(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_shop_return")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_shop_return")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -973,7 +973,7 @@ async def return_to_shop(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_shop_view")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_shop_view")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -1031,10 +1031,10 @@ async def view_shop_after_tutorial(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "in_shop_after_tutorial")
+    tutorial_db.update_tutorial_progress(player_id, "in_shop_after_tutorial")
     
     # Получаем баланс игрока
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 2000
     
     # Удаляем кнопки из предыдущего сообщения
@@ -1137,11 +1137,11 @@ async def show_shop_after_category(callback: CallbackQuery, state: FSMContext):
         return
     
     # Получаем баланс
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 2000
     
     # Получаем ВСЕ товары категории из БД
-    all_category_items = db.shop.get_items_by_category(category)
+    all_category_items = tutorial_db.get_shop_items_by_category(category)
     
     # СПИСОК РАЗРЕШЕННЫХ ТОВАРОВ ДЛЯ КАРТХОЛДЕРА
     ALLOWED_ITEMS = [
@@ -1156,13 +1156,13 @@ async def show_shop_after_category(callback: CallbackQuery, state: FSMContext):
     builder = InlineKeyboardBuilder()
     
     for item in all_category_items:
-        name = item[0]
+        item_name = item[0]
         item_price = item[1]
         
         can_afford = balance >= item_price
-        is_allowed = name in ALLOWED_ITEMS
+        is_allowed = item_name in ALLOWED_ITEMS
         
-        item_text = f"{name} - {item_price} монет"
+        item_text = f"{item_name} - {item_price} монет"
         
         if not can_afford:
             item_text += " ❌"
@@ -1178,7 +1178,7 @@ async def show_shop_after_category(callback: CallbackQuery, state: FSMContext):
             callback_data = "cant_afford"
         else:
             # Можно купить
-            short_name = name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('строчные', 'line').replace('пробойники', 'punch').replace('кожа', 'leather').replace('галантереи', 'galanterey').replace('швейные', 'sewing').replace('моснитки', 'mos').replace('для', 'for')[:20]
+            short_name = item_name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('строчные', 'line').replace('пробойники', 'punch').replace('кожа', 'leather').replace('галантереи', 'galanterey').replace('швейные', 'sewing').replace('моснитки', 'mos').replace('для', 'for')[:20]
             callback_data = f"buy_after_{short_name}"
         
         builder.button(
@@ -1218,7 +1218,7 @@ async def back_to_shop_after_menu(callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
         player_id = data.get('player_id')
         
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 2000
         
         # Полный список всех категорий
@@ -1285,11 +1285,11 @@ async def buy_after_tutorial(callback: CallbackQuery, state: FSMContext):
         print(f"🛒 ОТЛАДКА: Короткое название товара: {short_name}")
         
         # Получаем текущий баланс
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 2000
         
         # Получаем ВСЕ товары категории
-        all_category_items = db.shop.get_items_by_category(current_category)
+        all_category_items = tutorial_db.get_shop_items_by_category(current_category)
         print(f"📦 ОТЛАДКА: Все товары в категории {current_category}:")
         for item in all_category_items:
             print(f"  - {item[0]}")
@@ -1302,12 +1302,12 @@ async def buy_after_tutorial(callback: CallbackQuery, state: FSMContext):
             "sewing_mos": "Швейные МосНитки"
         }
 
-        full_name = short_to_full_map.get(short_name)
+        full_item_name = short_to_full_map.get(short_name)
         item_info = None
         
-        if full_name:
+        if full_item_name:
             for item in all_category_items:
-                if item[0] == full_name:
+                if item[0] == full_item_name:
                     item_info = item
                     break
         
@@ -1317,10 +1317,10 @@ async def buy_after_tutorial(callback: CallbackQuery, state: FSMContext):
             await callback.answer("❌ Товар не найден")
             return
         
-        name = item_info[0]
+        item_name = item_info[0]
         item_price = item_info[1]
         
-        print(f"✅ Найден товар: {name} за {item_price} монет")
+        print(f"✅ Найден товар: {item_name} за {item_price} монет")
         
         # Проверяем баланс
         if balance < item_price:
@@ -1328,29 +1328,29 @@ async def buy_after_tutorial(callback: CallbackQuery, state: FSMContext):
             return
         
         # Проверяем инвентарь на дубликаты
-        inventory = db.tutorial.get_tutorial_inventory(player_id)
+        inventory = tutorial_db.get_tutorial_inventory(player_id)
         for inv_item in inventory:
-            if len(inv_item) > 0 and inv_item[0] == name:
+            if len(inv_item) > 0 and inv_item[0] == item_name:
                 await callback.answer("❌ У тебя уже есть этот предмет!")
                 return
         
         # Выполняем покупку
         new_balance = balance - item_price
-        success = db.tutorial.add_to_tutorial_inventory(player_id, name, current_category)
+        success = tutorial_db.add_to_tutorial_inventory(player_id, item_name, current_category)
         
         if success:
             # Обновляем баланс
-            db.tutorial.update_player_balance(player_id, new_balance)
+            tutorial_db.update_player_balance(player_id, new_balance)
             
             # Обновляем сообщение магазина
-            await update_shop_after_category_message(callback, current_category, new_balance, f"✅ Куплено: {name}")
+            await update_shop_after_category_message(callback, current_category, new_balance, f"✅ Куплено: {item_name}")
             
             await state.update_data(player_balance=new_balance)
-            await callback.answer(f"✅ Куплено: {name}")
-            print(f"✅ Успешная покупка: {name}")
+            await callback.answer(f"✅ Куплено: {item_name}")
+            print(f"✅ Успешная покупка: {item_name}")
         else:
             await callback.answer("❌ Ошибка при покупке")
-            print(f"❌ Ошибка при добавлении в инвентарь: {name}")
+            print(f"❌ Ошибка при добавлении в инвентарь: {item_name}")
             
     except Exception as e:
         print(f"❌ КРИТИЧЕСКАЯ ОШИБКА в buy_after_tutorial: {str(e)}")
@@ -1361,7 +1361,7 @@ async def buy_after_tutorial(callback: CallbackQuery, state: FSMContext):
 # Вспомогательная функция для обновления сообщения магазина после обучения
 async def update_shop_after_category_message(callback: CallbackQuery, category: str, balance: int, status_message: str = ""):
     """Обновляет сообщение категории магазина после обучения"""
-    all_category_items = db.shop.get_items_by_category(category)
+    all_category_items = tutorial_db.get_shop_items_by_category(category)
     
     # ДОБАВЛЯЕМ СПИСОК РАЗРЕШЕННЫХ ТОВАРОВ
     ALLOWED_ITEMS = [
@@ -1374,13 +1374,13 @@ async def update_shop_after_category_message(callback: CallbackQuery, category: 
     
     builder = InlineKeyboardBuilder()
     for item in all_category_items:
-        name = item[0]
+        item_name = item[0]
         item_price = item[1]
         
         can_afford = balance >= item_price
-        is_allowed = name in ALLOWED_ITEMS  # ПРОВЕРЯЕМ РАЗРЕШЕНИЕ
+        is_allowed = item_name in ALLOWED_ITEMS  # ПРОВЕРЯЕМ РАЗРЕШЕНИЕ
         
-        item_text = f"{name} - {item_price} монет"
+        item_text = f"{item_name} - {item_price} монет"
         
         if not can_afford:
             item_text += " ❌"
@@ -1393,7 +1393,7 @@ async def update_shop_after_category_message(callback: CallbackQuery, category: 
         elif not can_afford:
             callback_data = "cant_afford"
         else:
-            short_name = name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('строчные', 'line').replace('пробойники', 'punch').replace('кожа', 'leather').replace('галантереи', 'galanterey').replace('швейные', 'sewing').replace('моснитки', 'mos').replace('для', 'for')[:20]
+            short_name = item_name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('строчные', 'line').replace('пробойники', 'punch').replace('кожа', 'leather').replace('галантереи', 'galanterey').replace('швейные', 'sewing').replace('моснитки', 'mos').replace('для', 'for')[:20]
             callback_data = f"buy_after_{short_name}"
         
         builder.button(
@@ -1429,7 +1429,7 @@ async def start_holder_craft(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_holder_leather")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_holder_leather")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -1442,7 +1442,7 @@ async def start_holder_craft(callback: CallbackQuery, state: FSMContext):
     stage14_text = "Выберите кожу из которой будете делать изделие"
     
     # Получаем инвентарь игрока (кожи для галантереи)
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     leather_items = [item[0] for item in inventory if any(keyword in item[0].lower() for keyword in ["кожа", "галантерея", "заготовка"])]
     
     print(f"🎒 ОТЛАДКА: Найдены кожи в инвентаре: {leather_items}")
@@ -1451,33 +1451,33 @@ async def start_holder_craft(callback: CallbackQuery, state: FSMContext):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     
     keyboard_buttons = []
-    for name in leather_items:
+    for item_name in leather_items:
         # СОЗДАЕМ ПРОСТЫЕ И ПОНЯТНЫЕ КОДЫ ДЛЯ КАЖДОЙ КОЖИ
-        if name == "Дешевая ременная заготовка":
+        if item_name == "Дешевая ременная заготовка":
             callback_data = "select_holder_leather_belt_cheap"
-        elif name == "Обычная ременная заготовка":
+        elif item_name == "Обычная ременная заготовка":
             callback_data = "select_holder_leather_belt_mid"
-        elif name == "Дорогая ременная заготовка":
+        elif item_name == "Дорогая ременная заготовка":
             callback_data = "select_holder_leather_belt_pro"
-        elif name == "Кожа для галантереи (дешевая)":
+        elif item_name == "Кожа для галантереи (дешевая)":
             callback_data = "select_holder_leather_galanterey_cheap"
-        elif name == "Кожа для галантереи (средняя)":
+        elif item_name == "Кожа для галантереи (средняя)":
             callback_data = "select_holder_leather_galanterey_mid"
-        elif name == "Кожа для галантереи (дорогая)":
+        elif item_name == "Кожа для галантереи (дорогая)":
             callback_data = "select_holder_leather_galanterey_pro"
-        elif name == "Кожа для сумок (дешевая)":
+        elif item_name == "Кожа для сумок (дешевая)":
             callback_data = "select_holder_leather_bags_cheap"
-        elif name == "Кожа для сумок (средняя)":
+        elif item_name == "Кожа для сумок (средняя)":
             callback_data = "select_holder_leather_bags_mid"
-        elif name == "Кожа для сумок (дорогая)":
+        elif item_name == "Кожа для сумок (дорогая)":
             callback_data = "select_holder_leather_bags_pro"
         else:
             # Для неизвестных кож используем общий формат
-            short_name = name.lower().replace(' ', '_').replace('(', '').replace(')', '')[:15]
+            short_name = item_name.lower().replace(' ', '_').replace('(', '').replace(')', '')[:15]
             callback_data = f"select_holder_leather_{short_name}"
     
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🧵 {name}", 
+            text=f"🧵 {item_name}", 
             callback_data=callback_data
         )])
     stage14_keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
@@ -1524,7 +1524,7 @@ async def shop_after_exit(callback: CallbackQuery, state: FSMContext):
         await callback.answer("❌ Ошибка: персонаж не найден")
         return
     
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     thread_items = [item[0] for item in inventory if "нитки" in item[0].lower()]
     
     print(f"🎒 ОТЛАДКА: Проверка ниток в инвентаре: {thread_items}")
@@ -1538,7 +1538,7 @@ async def shop_after_exit(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_holder_start")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_holder_start")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -1632,7 +1632,7 @@ async def select_holder_leather(callback: CallbackQuery, state: FSMContext):
     await state.update_data(selected_holder_leather=leather_name)
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_holder_tools")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_holder_tools")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -1648,14 +1648,14 @@ async def select_holder_leather(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     
     # Фильтруем только инструменты
     tool_items = []
     for item in inventory:
-        name = item[0]
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
-            tool_items.append(name)
+        item_name = item[0]
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
+            tool_items.append(item_name)
     
     # Инициализируем список выбранных инструментов в состоянии
     await state.update_data(selected_holder_tools=[])
@@ -1760,12 +1760,12 @@ async def toggle_holder_tool_selection(callback: CallbackQuery, state: FSMContex
     await state.update_data(selected_holder_tools=selected_tools)
     
     # Получаем инвентарь игрока для обновления клавиатуры
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     tool_items = []
     for item in inventory:
-        name = item[0]
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
-            tool_items.append(name)
+        item_name = item[0]
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул", "торцбил"]):
+            tool_items.append(item_name)
     
     # Создаем обновленную клавиатуру
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -1860,7 +1860,7 @@ async def holder_tools_confirmed(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_holder_threads")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_holder_threads")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -1878,7 +1878,7 @@ async def holder_tools_confirmed(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока (нитки)
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     thread_items = [item[0] for item in inventory if "нитки" in item[0].lower()]
     
     print(f"🎒 ОТЛАДКА: Найдены нитки в инвентаре: {thread_items}")
@@ -1887,11 +1887,11 @@ async def holder_tools_confirmed(callback: CallbackQuery, state: FSMContext):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     
     keyboard_buttons = []
-    for name in thread_items:
+    for item_name in thread_items:
         # Используем короткие callback_data
-        short_name = name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('швейные', 'sewing').replace('моснитки', 'mos')[:20]
+        short_name = item_name.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('швейные', 'sewing').replace('моснитки', 'mos')[:20]
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🧵 {name}", 
+            text=f"🧵 {item_name}", 
             callback_data=f"select_thread_{short_name}"
         )])
     
@@ -1940,7 +1940,7 @@ async def select_holder_threads(callback: CallbackQuery, state: FSMContext):
     thread_name = callback.data.replace("select_thread_", "").replace("_", " ")
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_holder_quality")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_holder_quality")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -1996,7 +1996,7 @@ async def holder_evaluate_quality(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_holder_gift")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_holder_gift")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -2059,13 +2059,13 @@ async def holder_gift(callback: CallbackQuery, state: FSMContext):
         return
     
     # Начисляем награду 2000 монет
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     current_balance = progress[3] if progress else 2000
     new_balance = current_balance + 2000
-    db.tutorial.update_player_balance(player_id, new_balance)
+    tutorial_db.update_player_balance(player_id, new_balance)
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_holder_final")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_holder_final")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -2126,7 +2126,7 @@ async def holder_to_shop(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_start")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_start")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -2183,10 +2183,10 @@ async def bag_go_to_shop(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "in_shop_bag_materials")
+    tutorial_db.update_tutorial_progress(player_id, "in_shop_bag_materials")
     
     # Получаем баланс
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 2000
     
     # Удаляем кнопки из предыдущего сообщения
@@ -2275,11 +2275,11 @@ async def show_bag_shop_category(callback: CallbackQuery, state: FSMContext):
         return
     
     # Получаем баланс
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 2000
     
     # Получаем ВСЕ товары категории из БД
-    all_category_items = db.shop.get_items_by_category(category)
+    all_category_items = tutorial_db.get_shop_items_by_category(category)
     
     # СПИСОК РАЗРЕШЕННЫХ ТОВАРОВ ДЛЯ СУМКИ (этап 21)
     ALLOWED_ITEMS_STAGE_21 = [
@@ -2293,13 +2293,13 @@ async def show_bag_shop_category(callback: CallbackQuery, state: FSMContext):
     builder = InlineKeyboardBuilder()
     
     for item in all_category_items:
-        name = item[0]
+        item_name = item[0]
         item_price = item[1]
         
         can_afford = balance >= item_price
-        is_allowed = name in ALLOWED_ITEMS_STAGE_21
+        is_allowed = item_name in ALLOWED_ITEMS_STAGE_21
         
-        item_text = f"{name} - {item_price} монет"
+        item_text = f"{item_name} - {item_price} монет"
         
         if not can_afford:
             item_text += " ❌"
@@ -2314,13 +2314,13 @@ async def show_bag_shop_category(callback: CallbackQuery, state: FSMContext):
             # Не хватает денег
             callback_data = "cant_afford"
         else:
-            if name == "Дешевая фурнитура для сумок":
+            if item_name == "Дешевая фурнитура для сумок":
                 callback_data = "buy_bag_cheap_bags_hardware"
-            elif name == "Пчелиный воск":
+            elif item_name == "Пчелиный воск":
                 callback_data = "buy_bag_beeswax"
             else:
                 # Для других товаров (на всякий случай)
-                short_name = name.lower().replace(' ', '_')[:20]
+                short_name = item_name.lower().replace(' ', '_')[:20]
                 callback_data = f"buy_bag_{short_name}"
         
         builder.button(
@@ -2368,11 +2368,11 @@ async def buy_bag_item(callback: CallbackQuery, state: FSMContext):
         print(f"🛒 ОТЛАДКА: Callback_data товара: '{callback_data}'")
         
         # Получаем текущий баланс
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 2000
         
         # Получаем ВСЕ товары категории
-        all_category_items = db.shop.get_items_by_category(current_category)
+        all_category_items = tutorial_db.get_shop_items_by_category(current_category)
         print(f"📦 ОТЛАДКА: Все товары в категории {current_category}:")
         for item in all_category_items:
             print(f"  - {item[0]}")
@@ -2384,12 +2384,12 @@ async def buy_bag_item(callback: CallbackQuery, state: FSMContext):
         }
         
         # Ищем товар по полному названию
-        full_name = callback_to_item_map.get(callback_data)
+        full_item_name = callback_to_item_map.get(callback_data)
         item_info = None
         
-        if full_name:
+        if full_item_name:
             for item in all_category_items:
-                if item[0] == full_name:
+                if item[0] == full_item_name:
                     item_info = item
                     break
         
@@ -2398,10 +2398,10 @@ async def buy_bag_item(callback: CallbackQuery, state: FSMContext):
             await callback.answer("❌ Товар не найден")
             return
         
-        name = item_info[0]
+        item_name = item_info[0]
         item_price = item_info[1]
         
-        print(f"✅ Найден товар: {name} за {item_price} монет")
+        print(f"✅ Найден товар: {item_name} за {item_price} монет")
         
         # Проверяем баланс
         if balance < item_price:
@@ -2409,29 +2409,29 @@ async def buy_bag_item(callback: CallbackQuery, state: FSMContext):
             return
         
         # Проверяем инвентарь на дубликаты
-        inventory = db.tutorial.get_tutorial_inventory(player_id)
+        inventory = tutorial_db.get_tutorial_inventory(player_id)
         for inv_item in inventory:
-            if len(inv_item) > 0 and inv_item[0] == name:
+            if len(inv_item) > 0 and inv_item[0] == item_name:
                 await callback.answer("❌ У тебя уже есть этот предмет!")
                 return
         
         # Выполняем покупку
         new_balance = balance - item_price
-        success = db.tutorial.add_to_tutorial_inventory(player_id, name, current_category)
+        success = tutorial_db.add_to_tutorial_inventory(player_id, item_name, current_category)
         
         if success:
             # Обновляем баланс
-            db.tutorial.update_player_balance(player_id, new_balance)
+            tutorial_db.update_player_balance(player_id, new_balance)
             
             # Обновляем сообщение магазина
             await back_to_bag_shop_menu(callback, state)
             
             await state.update_data(player_balance=new_balance)
-            await callback.answer(f"✅ Куплено: {name}")
-            print(f"✅ Успешная покупка: {name}")
+            await callback.answer(f"✅ Куплено: {item_name}")
+            print(f"✅ Успешная покупка: {item_name}")
         else:
             await callback.answer("❌ Ошибка при покупке")
-            print(f"❌ Ошибка при добавлении в инвентарь: {name}")
+            print(f"❌ Ошибка при добавлении в инвентарь: {item_name}")
             
     except Exception as e:
         print(f"❌ КРИТИЧЕСКАЯ ОШИБКА в buy_bag_item: {str(e)}")
@@ -2449,7 +2449,7 @@ async def back_to_bag_shop_menu(callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
         player_id = data.get('player_id')
         
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 2000
         
         # Полный каталог категорий
@@ -2504,7 +2504,7 @@ async def bag_shop_exit(callback: CallbackQuery, state: FSMContext):
         return
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     inventory_items = [item[0] for item in inventory]
     
     # Обязательные товары для этапа 21
@@ -2530,7 +2530,7 @@ async def bag_shop_exit(callback: CallbackQuery, state: FSMContext):
     
     # Все товары куплены - можно выходить
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_materials_selection")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_materials_selection")
     
     # Редактируем сообщение магазина
     await callback.message.edit_caption(
@@ -2557,7 +2557,7 @@ async def bag_go_home(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_materials_selection")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_materials_selection")
     
     # Удаляем кнопки из предыдущего сообщения
     try:
@@ -2572,7 +2572,7 @@ async def bag_go_home(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     material_items = [item[0] for item in inventory if any(keyword in item[0].lower() for keyword in ["кожа", "фурнитура"])]
     
     # Инициализируем список выбранных материалов
@@ -2580,10 +2580,10 @@ async def bag_go_home(callback: CallbackQuery, state: FSMContext):
     
     # Создаем клавиатуру выбора материалов
     keyboard_buttons = []
-    for name in material_items:
+    for item_name in material_items:
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🔘 {name}", 
-            callback_data=f"toggle_bag_material_{name.replace(' ', '_')}"
+            text=f"🔘 {item_name}", 
+            callback_data=f"toggle_bag_material_{item_name.replace(' ', '_')}"
         )])
     
     # Кнопка продолжения
@@ -2642,16 +2642,16 @@ async def toggle_bag_material_selection(callback: CallbackQuery, state: FSMConte
     await state.update_data(selected_bag_materials=selected_materials)
     
     # Получаем инвентарь для обновления клавиатуры
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     material_items = [item[0] for item in inventory if any(keyword in item[0].lower() for keyword in ["кожа", "фурнитура"])]
     
     # Создаем обновленную клавиатуру
     keyboard_buttons = []
-    for name in material_items:
-        emoji = "✅" if name in selected_materials else "🔘"
+    for item_name in material_items:
+        emoji = "✅" if item_name in selected_materials else "🔘"
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"{emoji} {name}", 
-            callback_data=f"toggle_bag_material_{name.replace(' ', '_')}"
+            text=f"{emoji} {item_name}", 
+            callback_data=f"toggle_bag_material_{item_name.replace(' ', '_')}"
         )])
     
     # Проверяем выбранные материалы
@@ -2712,7 +2712,7 @@ async def bag_materials_confirmed(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_tools_selection")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_tools_selection")
     
     # Удаляем кнопки
     try:
@@ -2727,12 +2727,12 @@ async def bag_materials_confirmed(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     tool_items = []
     for item in inventory:
-        name = item[0]
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
-            tool_items.append(name)
+        item_name = item[0]
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
+            tool_items.append(item_name)
     
     # Инициализируем список выбранных инструментов
     await state.update_data(selected_bag_tools=[])
@@ -2824,12 +2824,12 @@ async def toggle_bag_tool_selection(callback: CallbackQuery, state: FSMContext):
     await state.update_data(selected_bag_tools=selected_tools)
     
     # Получаем инвентарь для обновления клавиатуры
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     tool_items = []
     for item in inventory:
-        name = item[0]
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
-            tool_items.append(name)
+        item_name = item[0]
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
+            tool_items.append(item_name)
     
     # Создаем обновленную клавиатуру
     keyboard_buttons = []
@@ -2911,7 +2911,7 @@ async def bag_tools_confirmed(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_wax_selection")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_wax_selection")
     
     # Удаляем кнопки
     try:
@@ -2926,15 +2926,15 @@ async def bag_tools_confirmed(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока (воск)
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     wax_items = [item[0] for item in inventory if "воск" in item[0].lower()]
     
     # Создаем клавиатуру выбора воска
     keyboard_buttons = []
-    for name in wax_items:
+    for item_name in wax_items:
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🧴 {name}", 
-            callback_data=f"select_bag_wax_{name.replace(' ', '_')}"
+            text=f"🧴 {item_name}", 
+            callback_data=f"select_bag_wax_{item_name.replace(' ', '_')}"
         )])
     
     wax_keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
@@ -2975,7 +2975,7 @@ async def select_bag_wax(callback: CallbackQuery, state: FSMContext):
     wax_name = callback.data.replace("select_bag_wax_", "").replace("_", " ")
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_threads_selection")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_threads_selection")
     
     # Удаляем кнопки
     try:
@@ -2990,15 +2990,15 @@ async def select_bag_wax(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока (нитки)
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     thread_items = [item[0] for item in inventory if "нитки" in item[0].lower()]
     
     # Создаем клавиатуру выбора ниток
     keyboard_buttons = []
-    for name in thread_items:
+    for item_name in thread_items:
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🧵 {name}", 
-            callback_data=f"select_bag_thread_{name.replace(' ', '_')}"
+            text=f"🧵 {item_name}", 
+            callback_data=f"select_bag_thread_{item_name.replace(' ', '_')}"
         )])
     
     threads_keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
@@ -3039,7 +3039,7 @@ async def select_bag_thread(callback: CallbackQuery, state: FSMContext):
     thread_name = callback.data.replace("select_bag_thread_", "").replace("_", " ")
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_quality_1")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_quality_1")
     
     # Удаляем кнопки
     try:
@@ -3094,7 +3094,7 @@ async def bag_evaluate_quality_1(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_retry")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_retry")
     
     # Удаляем кнопки
     try:
@@ -3120,14 +3120,14 @@ async def bag_evaluate_quality_1(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(quality_text)
     
     # Автоматическое списание материалов
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     for item in inventory:
         if item[0] in ["Кожа для сумок (дешевая)", "Дешевая фурнитура для сумок"]:
             # Удаляем материал из инвентаря
-            conn = db.tutorial.get_connection()
+            conn = tutorial_db.get_connection()
             try:
                 conn.execute(
-                    'DELETE FROM tutorial_inventory WHERE player_id = ? AND name = ?',
+                    'DELETE FROM tutorial_inventory WHERE player_id = ? AND item_name = ?',
                     (player_id, item[0])
                 )
                 conn.commit()
@@ -3145,10 +3145,10 @@ async def bag_evaluate_quality_1(callback: CallbackQuery, state: FSMContext):
     )
     
     # Пополняем баланс на 1000 монет
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     current_balance = progress[3] if progress else 2000
     new_balance = current_balance + 1000
-    db.tutorial.update_player_balance(player_id, new_balance)
+    tutorial_db.update_player_balance(player_id, new_balance)
     
     # Клавиатура для перехода в магазин
     stage28_keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -3186,10 +3186,10 @@ async def bag_retry_shop(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "in_shop_bag_retry")
+    tutorial_db.update_tutorial_progress(player_id, "in_shop_bag_retry")
     
     # Получаем баланс
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 3000  # +1000 от премии
     
     # Удаляем кнопки
@@ -3272,23 +3272,23 @@ async def show_bag_retry_shop_category(callback: CallbackQuery, state: FSMContex
         return
     
     # Получаем баланс
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 3000
     
     # Получаем товары категории
-    all_category_items = db.shop.get_items_by_category(category)
+    all_category_items = tutorial_db.get_shop_items_by_category(category)
     
     # Фильтруем только нужные товары для второй попытки
     allowed_items = []
     for item in all_category_items:
-        name = item[0]
-        if category == "Материалы" and "сумок" in name.lower() and "средняя" in name.lower():
+        item_name = item[0]
+        if category == "Материалы" and "сумок" in item_name.lower() and "средняя" in item_name.lower():
             allowed_items.append(item)
-        elif category == "Фурнитура" and "сумок" in name.lower() and "средняя" in name.lower():
+        elif category == "Фурнитура" and "сумок" in item_name.lower() and "средняя" in item_name.lower():
             allowed_items.append(item)
-        elif category == "Нитки" and "синтетические" in name.lower():
+        elif category == "Нитки" and "синтетические" in item_name.lower():
             allowed_items.append(item)
-        elif category == "Химия" and "масловосковые" in name.lower():
+        elif category == "Химия" and "масловосковые" in item_name.lower():
             allowed_items.append(item)
     
     # Создаем клавиатуру
@@ -3298,16 +3298,16 @@ async def show_bag_retry_shop_category(callback: CallbackQuery, state: FSMContex
     
     if allowed_items:
         for item in allowed_items:
-            name = item[0]
+            item_name = item[0]
             item_price = item[1]
             
             can_afford = balance >= item_price
-            item_text = f"{name} - {item_price} монет"
+            item_text = f"{item_name} - {item_price} монет"
             
             if not can_afford:
                 item_text += " ❌"
             
-            callback_data = f"buy_bag_retry_{name.replace(' ', '_')}" if can_afford else "cant_afford"
+            callback_data = f"buy_bag_retry_{item_name.replace(' ', '_')}" if can_afford else "cant_afford"
             
             builder.button(
                 text=item_text,
@@ -3346,11 +3346,11 @@ async def back_to_bag_retry_shop_menu(callback: CallbackQuery, state: FSMContext
         data = await state.get_data()
         player_id = data.get('player_id')
         
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 3000
         
         # Проверяем инвентарь
-        inventory = db.tutorial.get_tutorial_inventory(player_id)
+        inventory = tutorial_db.get_tutorial_inventory(player_id)
         inventory_items = [item[0] for item in inventory]
         
         # Проверяем куплены ли все нужные товары
@@ -3418,19 +3418,19 @@ async def buy_bag_retry_item(callback: CallbackQuery, state: FSMContext):
             return
         
         # Получаем название товара
-        name = callback.data.replace("buy_bag_retry_", "").replace("_", " ")
+        item_name = callback.data.replace("buy_bag_retry_", "").replace("_", " ")
         
         # Получаем баланс
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 3000
         
         # Получаем товары категории
-        all_category_items = db.shop.get_items_by_category(current_category)
+        all_category_items = tutorial_db.get_shop_items_by_category(current_category)
         
         # Ищем товар
         item_info = None
         for item in all_category_items:
-            if item[0] == name:
+            if item[0] == item_name:
                 item_info = item
                 break
         
@@ -3446,20 +3446,20 @@ async def buy_bag_retry_item(callback: CallbackQuery, state: FSMContext):
             return
         
         # Проверяем инвентарь
-        inventory = db.tutorial.get_tutorial_inventory(player_id)
+        inventory = tutorial_db.get_tutorial_inventory(player_id)
         for inv_item in inventory:
-            if len(inv_item) > 0 and inv_item[0] == name:
+            if len(inv_item) > 0 and inv_item[0] == item_name:
                 await callback.answer("❌ У тебя уже есть этот предмет!")
                 return
         
         # Выполняем покупку
         new_balance = balance - item_price
-        success = db.tutorial.add_to_tutorial_inventory(player_id, name, current_category)
+        success = tutorial_db.add_to_tutorial_inventory(player_id, item_name, current_category)
         
         if success:
-            db.tutorial.update_player_balance(player_id, new_balance)
+            tutorial_db.update_player_balance(player_id, new_balance)
             await back_to_bag_retry_shop_menu(callback, state)
-            await callback.answer(f"✅ Куплено: {name}")
+            await callback.answer(f"✅ Куплено: {item_name}")
         else:
             await callback.answer("❌ Ошибка при покупке")
             
@@ -3474,7 +3474,7 @@ async def bag_retry_shop_not_ready(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     player_id = data.get('player_id')
     
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     inventory_items = [item[0] for item in inventory]
     
     required_items = [
@@ -3505,7 +3505,7 @@ async def bag_retry_go_home(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_retry_start")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_retry_start")
     
     # Удаляем кнопки
     try:
@@ -3558,7 +3558,7 @@ async def bag_retry_start(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_retry_materials")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_retry_materials")
     
     # Удаляем кнопки
     try:
@@ -3573,7 +3573,7 @@ async def bag_retry_start(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     material_items = [item[0] for item in inventory if any(keyword in item[0].lower() for keyword in ["кожа", "фурнитура"])]
     
     # Инициализируем список выбранных материалов
@@ -3581,10 +3581,10 @@ async def bag_retry_start(callback: CallbackQuery, state: FSMContext):
     
     # Создаем клавиатуру выбора материалов
     keyboard_buttons = []
-    for name in material_items:
+    for item_name in material_items:
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🔘 {name}", 
-            callback_data=f"toggle_bag_retry_material_{name.replace(' ', '_')}"
+            text=f"🔘 {item_name}", 
+            callback_data=f"toggle_bag_retry_material_{item_name.replace(' ', '_')}"
         )])
     
     # Кнопка продолжения
@@ -3643,16 +3643,16 @@ async def toggle_bag_retry_material_selection(callback: CallbackQuery, state: FS
     await state.update_data(selected_bag_retry_materials=selected_materials)
     
     # Получаем инвентарь для обновления клавиатуры
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     material_items = [item[0] for item in inventory if any(keyword in item[0].lower() for keyword in ["кожа", "фурнитура"])]
     
     # Создаем обновленную клавиатуру
     keyboard_buttons = []
-    for name in material_items:
-        emoji = "✅" if name in selected_materials else "🔘"
+    for item_name in material_items:
+        emoji = "✅" if item_name in selected_materials else "🔘"
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"{emoji} {name}", 
-            callback_data=f"toggle_bag_retry_material_{name.replace(' ', '_')}"
+            text=f"{emoji} {item_name}", 
+            callback_data=f"toggle_bag_retry_material_{item_name.replace(' ', '_')}"
         )])
     
     # Проверяем выбранные материалы
@@ -3713,7 +3713,7 @@ async def bag_retry_materials_confirmed(callback: CallbackQuery, state: FSMConte
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_retry_tools")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_retry_tools")
     
     # Удаляем кнопки
     try:
@@ -3728,12 +3728,12 @@ async def bag_retry_materials_confirmed(callback: CallbackQuery, state: FSMConte
     )
     
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     tool_items = []
     for item in inventory:
-        name = item[0]
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
-            tool_items.append(name)
+        item_name = item[0]
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
+            tool_items.append(item_name)
     
     # Инициализируем список выбранных инструментов
     await state.update_data(selected_bag_retry_tools=[])
@@ -3825,12 +3825,12 @@ async def toggle_bag_retry_tool_selection(callback: CallbackQuery, state: FSMCon
     await state.update_data(selected_bag_retry_tools=selected_tools)
     
     # Получаем инвентарь для обновления клавиатуры
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     tool_items = []
     for item in inventory:
-        name = item[0]
-        if any(keyword in name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
-            tool_items.append(name)
+        item_name = item[0]
+        if any(keyword in item_name.lower() for keyword in ["нож", "пробойник", "мультитул"]):
+            tool_items.append(item_name)
     
     # Создаем обновленную клавиатуру
     keyboard_buttons = []
@@ -3912,7 +3912,7 @@ async def bag_retry_tools_confirmed(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_retry_wax")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_retry_wax")
     
     # Удаляем кнопки
     try:
@@ -3930,15 +3930,15 @@ async def bag_retry_tools_confirmed(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока (масловосковые смеси)
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     wax_items = [item[0] for item in inventory if "масловосковые" in item[0].lower()]
     
     # Создаем клавиатуру выбора
     keyboard_buttons = []
-    for name in wax_items:
+    for item_name in wax_items:
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🧴 {name}", 
-            callback_data=f"select_bag_retry_wax_{name.replace(' ', '_')}"
+            text=f"🧴 {item_name}", 
+            callback_data=f"select_bag_retry_wax_{item_name.replace(' ', '_')}"
         )])
     
     wax_keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
@@ -3979,7 +3979,7 @@ async def select_bag_retry_wax(callback: CallbackQuery, state: FSMContext):
     wax_name = callback.data.replace("select_bag_retry_wax_", "").replace("_", " ")
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_retry_threads")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_retry_threads")
     
     # Удаляем кнопки
     try:
@@ -3994,15 +3994,15 @@ async def select_bag_retry_wax(callback: CallbackQuery, state: FSMContext):
     )
     
     # Получаем инвентарь игрока (нитки)
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     thread_items = [item[0] for item in inventory if "нитки" in item[0].lower()]
     
     # Создаем клавиатуру выбора ниток
     keyboard_buttons = []
-    for name in thread_items:
+    for item_name in thread_items:
         keyboard_buttons.append([InlineKeyboardButton(
-            text=f"🧵 {name}", 
-            callback_data=f"select_bag_retry_thread_{name.replace(' ', '_')}"
+            text=f"🧵 {item_name}", 
+            callback_data=f"select_bag_retry_thread_{item_name.replace(' ', '_')}"
         )])
     
     threads_keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
@@ -4043,7 +4043,7 @@ async def select_bag_retry_thread(callback: CallbackQuery, state: FSMContext):
     thread_name = callback.data.replace("select_bag_retry_thread_", "").replace("_", " ")
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_bag_quality_2")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_bag_quality_2")
     
     # Удаляем кнопки
     try:
@@ -4099,7 +4099,7 @@ async def bag_evaluate_quality_2(callback: CallbackQuery, state: FSMContext):
         return
     
     # Обновляем прогресс
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_final")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_final")
     
     # Удаляем кнопки
     try:
@@ -4129,7 +4129,7 @@ async def bag_evaluate_quality_2(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(quality_text)
     
     # Автоматическое списание материалов
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     materials_to_remove = [
         "Кожа для сумок (средняя)",
         "Средняя фурнитура для сумок", 
@@ -4140,10 +4140,10 @@ async def bag_evaluate_quality_2(callback: CallbackQuery, state: FSMContext):
         for item in inventory:
             if item[0] == material:
                 # Удаляем материал из инвентаря
-                conn = db.tutorial.get_connection()
+                conn = tutorial_db.get_connection()
                 try:
                     conn.execute(
-                        'DELETE FROM tutorial_inventory WHERE player_id = ? AND name = ?',
+                        'DELETE FROM tutorial_inventory WHERE player_id = ? AND item_name = ?',
                         (player_id, material)
                     )
                     conn.commit()
@@ -4235,8 +4235,8 @@ async def start_tutorial(callback: CallbackQuery, state: FSMContext):
     player_id = active_player[0]  # ID персонажа
     
     # Инициализируем прогресс обучения для этого персонажа
-    db.tutorial.init_tutorial_progress(player_id)
-    db.tutorial.init_shop_items()
+    tutorial_db.init_tutorial_progress(player_id)
+    tutorial_db.init_shop_items()
     
     # Удаляем кнопки из предыдущего сообщения
     await callback.message.edit_reply_markup(reply_markup=None)
@@ -4255,7 +4255,7 @@ async def enter_shop(callback: CallbackQuery, state: FSMContext):
     player_id = data.get('player_id')
 
     await state.set_state(TutorialStates.waiting_for_approach)
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_approach")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_approach")
     
     active_player = db.get_active_player(callback.from_user.id)
     player_name = active_player[2] if active_player else "Игрок"
@@ -4282,7 +4282,7 @@ async def enter_shop(callback: CallbackQuery, state: FSMContext):
         )
     
     await state.set_state(TutorialStates.waiting_for_approach)
-    db.tutorial.update_tutorial_progress(data.get('player_id'), "waiting_for_approach")
+    tutorial_db.update_tutorial_progress(data.get('player_id'), "waiting_for_approach")
     await callback.answer()
 
 # Обработка подхода поближе
@@ -4292,7 +4292,7 @@ async def approach_closer(callback: CallbackQuery, state: FSMContext):
     player_id = data.get('player_id')
     
     await state.set_state(TutorialStates.waiting_for_oldman_approach)
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_oldman_approach")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_oldman_approach")
 
     active_player = db.get_active_player(callback.from_user.id)
     player_name = active_player[2] if active_player else "Игрок"
@@ -4319,7 +4319,7 @@ async def approach_closer(callback: CallbackQuery, state: FSMContext):
         )
     
     await state.set_state(TutorialStates.waiting_for_oldman_approach)
-    db.tutorial.update_tutorial_progress(data.get('player_id'), "waiting_for_oldman_approach")
+    tutorial_db.update_tutorial_progress(data.get('player_id'), "waiting_for_oldman_approach")
     await callback.answer()
 
 # Обработка подхода к Гене
@@ -4329,7 +4329,7 @@ async def approach_oldman(callback: CallbackQuery, state: FSMContext):
     player_id = data.get('player_id')
     
     await state.set_state(TutorialStates.waiting_for_showcase)
-    db.tutorial.update_tutorial_progress(player_id, "waiting_for_showcase")
+    tutorial_db.update_tutorial_progress(player_id, "waiting_for_showcase")
     
     active_player = db.get_active_player(callback.from_user.id)
     player_name = active_player[2] if active_player else "Игрок"
@@ -4374,7 +4374,7 @@ async def approach_oldman(callback: CallbackQuery, state: FSMContext):
         )
     
     await state.set_state(TutorialStates.waiting_for_showcase)
-    db.tutorial.update_tutorial_progress(data.get('player_id'), "waiting_for_showcase")
+    tutorial_db.update_tutorial_progress(data.get('player_id'), "waiting_for_showcase")
     await callback.answer()
 
 # Обработка просмотра витрины
@@ -4384,13 +4384,13 @@ async def view_showcase(callback: CallbackQuery, state: FSMContext):
     player_id = data.get('player_id')
 
     await state.set_state(TutorialStates.in_shop_menu)
-    db.tutorial.update_tutorial_progress(player_id, "in_shop_menu")
+    tutorial_db.update_tutorial_progress(player_id, "in_shop_menu")
     
     active_player = db.get_active_player(callback.from_user.id)
     player_name = active_player[2] if active_player else "Игрок"
     
     # Получаем баланс из БД
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 2000  # player_balance
     
     # Удаляем кнопки из предыдущего сообщения
@@ -4415,7 +4415,7 @@ async def view_showcase(callback: CallbackQuery, state: FSMContext):
         )
     
     await state.set_state(TutorialStates.in_shop_menu)
-    db.tutorial.update_tutorial_progress(data.get('player_id'), "in_shop_menu")
+    tutorial_db.update_tutorial_progress(data.get('player_id'), "in_shop_menu")
     await state.update_data(player_balance=balance)
     await callback.answer()
 
@@ -4428,7 +4428,7 @@ async def back_to_shop_menu(callback: CallbackQuery, state: FSMContext):
         data = await state.get_data()
         player_id = data.get('player_id')
         
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 2000
         
         # Создаем клавиатуру главного меню магазина
@@ -4464,7 +4464,7 @@ async def shop_exit(callback: CallbackQuery, state: FSMContext):
             await callback.answer("❌ Ошибка: персонаж не найден")
             return
     # Получаем инвентарь игрока
-    inventory = db.tutorial.get_tutorial_inventory(player_id)
+    inventory = tutorial_db.get_tutorial_inventory(player_id)
     inventory_items = [item[0] for item in inventory]  # список названий товаров
     
     print(f"🎒 ПРОВЕРКА ИНВЕНТАРЯ ПРИ ВЫХОДЕ: {inventory_items}")
@@ -4546,11 +4546,11 @@ async def show_shop_category(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     player_id = data.get('player_id')
     
-    progress = db.tutorial.get_tutorial_progress(player_id)
+    progress = tutorial_db.get_tutorial_progress(player_id)
     balance = progress[3] if progress else 2000
     
     # Получаем ВСЕ товары категории
-    all_category_items = db.shop.get_items_by_category(category)
+    all_category_items = tutorial_db.get_shop_items_by_category(category)
     print(f"📦 ОТЛАДКА: Все товары в категории {category}: {all_category_items}")
     
     # СОЗДАЕМ КЛАВИАТУРУ с правильной структурой
@@ -4561,17 +4561,17 @@ async def show_shop_category(callback: CallbackQuery, state: FSMContext):
             # item[0] = название (string)
             # item[1] = цена (int) 
             # item[2] = доступность в обучении (0/1)
-            name = item[0]
+            item_name = item[0]
             item_price = item[1]
             is_available_in_tutorial = item[2]
             
-            print(f"🛒 ОТЛАДКА: Товар - Название: '{name}', Цена: {item_price}, Доступен в обучении: {is_available_in_tutorial}")
+            print(f"🛒 ОТЛАДКА: Товар - Название: '{item_name}', Цена: {item_price}, Доступен в обучении: {is_available_in_tutorial}")
             
             # Проверяем доступность в обучении
-            is_tutorial_item = name in AVAILABLE_TUTORIAL_ITEMS.get(category, [])
+            is_tutorial_item = item_name in AVAILABLE_TUTORIAL_ITEMS.get(category, [])
             
             can_afford = balance >= item_price
-            item_text = f"{name} - {item_price} монет"
+            item_text = f"{item_name} - {item_price} монет"
             
             if not can_afford:
                 item_text += " ❌"
@@ -4587,7 +4587,7 @@ async def show_shop_category(callback: CallbackQuery, state: FSMContext):
                 callback_data = "cant_afford"
             else:
                 # Можно купить
-                callback_data = f"buy_{name}"
+                callback_data = f"buy_{item_name}"
             
             builder.button(
                 text=item_text,
@@ -4644,40 +4644,40 @@ async def buy_item(callback: CallbackQuery, state: FSMContext):
             return
         
         # Получаем название товара из callback_data
-        name = callback.data.replace("buy_", "")
-        print(f"🛒 ПОКУПКА: Начало покупки товара: '{name}' для player_id: {player_id}")
+        item_name = callback.data.replace("buy_", "")
+        print(f"🛒 ПОКУПКА: Начало покупки товара: '{item_name}' для player_id: {player_id}")
         
         # ДАЛЕЕ ИДЕТ СТАРЫЙ КОД (без изменений)...
         # Получаем текущий баланс из БД
-        progress = db.tutorial.get_tutorial_progress(player_id)
+        progress = tutorial_db.get_tutorial_progress(player_id)
         balance = progress[3] if progress else 2000
             
         print(f"💰 ПОКУПКА: Баланс игрока {player_id}: {balance}")
         
         # Получаем информацию о товаре
-        all_category_items = db.shop.get_items_by_category(current_category)
+        all_category_items = tutorial_db.get_shop_items_by_category(current_category)
         item_info = None
         
         for item in all_category_items:
             # Сравниваем по названию (item[0])
-            if item[0] == name:  
+            if item[0] == item_name:  
                 item_info = item
                 break
         
         if not item_info:
-            print(f"❌ ПОКУПКА: Товар '{name}' не найден")
+            print(f"❌ ПОКУПКА: Товар '{item_name}' не найден")
             await callback.answer("❌ Товар не найден")
             return
         
         # Извлекаем данные из кортежа
-        name = item_info[0]
+        item_name = item_info[0]
         item_price = item_info[1]
         is_available_in_tutorial = item_info[2]
         
-        print(f"✅ ПОКУПКА: Найден товар: '{name}' за {item_price} монет")
+        print(f"✅ ПОКУПКА: Найден товар: '{item_name}' за {item_price} монет")
         
         # Проверяем, доступен ли товар в обучении
-        if name not in AVAILABLE_TUTORIAL_ITEMS.get(current_category, []):
+        if item_name not in AVAILABLE_TUTORIAL_ITEMS.get(current_category, []):
             print(f"❌ ПОКУПКА: Товар недоступен в обучении")
             await callback.answer("❌ Этот товар недоступен в обучении!")
             return
@@ -4689,12 +4689,12 @@ async def buy_item(callback: CallbackQuery, state: FSMContext):
             return
         
         # Проверяем инвентарь
-        inventory = db.tutorial.get_tutorial_inventory(player_id)
+        inventory = tutorial_db.get_tutorial_inventory(player_id)
         print(f"🎒 ПОКУПКА: Текущий инвентарь: {inventory}")
         
         # Проверяем, есть ли уже такой товар в инвентаре (по названию)
         for inv_item in inventory:
-            if len(inv_item) > 1 and inv_item[1] == name:  # inv_item[1] - название товара в инвентаре
+            if len(inv_item) > 1 and inv_item[1] == item_name:  # inv_item[1] - название товара в инвентаре
                 print(f"❌ ПОКУПКА: Товар уже есть в инвентаре")
                 await callback.answer("❌ У тебя уже есть этот предмет!")
                 return
@@ -4704,19 +4704,19 @@ async def buy_item(callback: CallbackQuery, state: FSMContext):
         print(f"💸 ПОКУПКА: Списание {item_price} монет. Новый баланс: {new_balance}")
         
         # Добавляем в инвентарь (передаем название вместо ID)
-        success = db.tutorial.add_to_tutorial_inventory(player_id, name, current_category)
+        success = tutorial_db.add_to_tutorial_inventory(player_id, item_name, current_category)
         
         if success:
             # Обновляем баланс
-            db.tutorial.update_player_balance(player_id, new_balance)
+            tutorial_db.update_player_balance(player_id, new_balance)
             
             print(f"✅ ПОКУПКА: Успешно! Товар добавлен в инвентарь")
             
             # Обновляем сообщение магазина
-            await update_shop_category_message(callback, current_category, new_balance, f"✅ Куплено: {name}")
+            await update_shop_category_message(callback, current_category, new_balance, f"✅ Куплено: {item_name}")
             
             await state.update_data(player_balance=new_balance)
-            await callback.answer(f"✅ Куплено: {name}")
+            await callback.answer(f"✅ Куплено: {item_name}")
         else:
             print(f"❌ ПОКУПКА: Ошибка при добавлении в инвентарь")
             await callback.answer("❌ Это я уже купил")
@@ -4730,19 +4730,19 @@ async def buy_item(callback: CallbackQuery, state: FSMContext):
 # Вспомогательная функция для обновления сообщения магазина
 async def update_shop_category_message(callback: CallbackQuery, category: str, balance: int, status_message: str = ""):
     """Обновляет сообщение категории магазина"""
-    all_category_items = db.shop.get_items_by_category(category)
+    all_category_items = tutorial_db.get_shop_items_by_category(category)
     
     builder = InlineKeyboardBuilder()
     for item in all_category_items:
-        name = item[0]
+        item_name = item[0]
         item_price = item[1]
         is_available_in_tutorial = item[2]
         
         # Проверяем доступность в обучении
-        is_tutorial_item = name in AVAILABLE_TUTORIAL_ITEMS.get(category, [])
+        is_tutorial_item = item_name in AVAILABLE_TUTORIAL_ITEMS.get(category, [])
         
         can_afford = balance >= item_price
-        item_text = f"{name} - {item_price} монет"
+        item_text = f"{item_name} - {item_price} монет"
         
         if not can_afford:
             item_text += " ❌"
@@ -4755,7 +4755,7 @@ async def update_shop_category_message(callback: CallbackQuery, category: str, b
         elif not can_afford:
             callback_data = "cant_afford"
         else:
-            callback_data = f"buy_{name}"
+            callback_data = f"buy_{item_name}"
         
         builder.button(
             text=item_text,

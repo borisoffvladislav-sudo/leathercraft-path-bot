@@ -79,11 +79,13 @@ class Database:
         from .player_inventory import PlayerInventoryDB
         from .characters import CharactersDB
         from .tutorial_progress import TutorialProgressDB
+        from .orders import OrdersDB
         
         self.shop = ShopCatalogDB(db_path)
         self.inventory = PlayerInventoryDB(db_path)
         self.characters = CharactersDB(db_path)
         self.tutorial = TutorialProgressDB(db_path)
+        self.orders = OrdersDB(db_path)
     
     # === МЕТОДЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ ===
     
