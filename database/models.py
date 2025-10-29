@@ -19,7 +19,9 @@ class BaseDatabase:
     
     def _ensure_database_dir(self):
         """Создает папку для базы данных если не существует"""
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+         # Если путь содержит папки - создаем их
+        if os.path.dirname(self.db_path) and not os.path.exists(os.path.dirname(self.db_path)):
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
     
     def _get_connection(self) -> sqlite3.Connection:
         """
