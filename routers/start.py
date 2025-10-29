@@ -12,7 +12,7 @@ from routers.tutorial import (
     get_oldman_approach_keyboard, 
     get_shop_menu_keyboard,
     TutorialStates, 
-    tutorial_db
+    
 )
 import os
 import asyncio 
@@ -332,8 +332,8 @@ async def start_tutorial_handler(callback: CallbackQuery, state: FSMContext):
     player_class = active_player[3]  # класс персонажа
     
     # Инициализируем прогресс обучения для этого персонажа
-    db.tutorial.init_tutorial_progress(player_id)
-    db.tutorial.init_shop_items()
+    tutorial_db.init_tutorial_progress(player_id)
+    tutorial_db.init_shop_items()
     
     # Определяем предысторию по классу
     if player_class == "Работяга":
@@ -650,7 +650,7 @@ async def continue_playing(callback: CallbackQuery, state: FSMContext):
         pass
     
     # Проверяем прогресс обучения
-    tutorial_progress = db.tutorial.get_tutorial_progress(player_id)
+    tutorial_progress = tutorial_db.get_tutorial_progress(player_id)
     
     if tutorial_progress:
         # Восстанавливаем обучение с последнего шага
@@ -736,7 +736,7 @@ async def confirm_new_character(callback: CallbackQuery, state: FSMContext):
     
     if old_player_id:
         db.deactivate_player(old_player_id)
-        db.tutorial.clear_tutorial_data(old_player_id)
+        tutorial_db.clear_tutorial_data(old_player_id)
     
     await callback.message.edit_reply_markup(reply_markup=None)
     await start_new_character_creation(callback, state)
@@ -916,7 +916,7 @@ async def final_confirm_deletion(callback: CallbackQuery, state: FSMContext):
     player_name = active_player[2]
     
     # Удаляем данные обучения
-    db.tutorial.clear_tutorial_data(player_id)
+    tutorial_db.clear_tutorial_data(player_id)
     
     # Деактивируем персонажа
     db.deactivate_player(player_id)
@@ -1073,7 +1073,7 @@ async def confirm_new_character(callback: CallbackQuery, state: FSMContext):
     # Удаляем старого персонажа если он есть
     if old_player_id:
         db.deactivate_player(old_player_id)
-        db.tutorial.clear_tutorial_data(old_player_id)
+        tutorial_db.clear_tutorial_data(old_player_id)
         print(f"🗑️ Удален старый персонаж: {old_player_id}")
     
     # Удаляем кнопки из сообщения подтверждения
@@ -1125,8 +1125,8 @@ async def start_tutorial(callback: CallbackQuery, state: FSMContext):
     player_class = active_player[3]  # класс персонажа
     
     # Инициализируем прогресс обучения для этого персонажа
-    db.tutorial.init_tutorial_progress(player_id)
-    db.tutorial.init_shop_items()
+    tutorial_db.init_tutorial_progress(player_id)
+    tutorial_db.init_shop_items()
     
     # Определяем предысторию по классу
     if player_class == "Работяга":
@@ -1191,7 +1191,7 @@ async def return_to_last_step(callback: CallbackQuery, state: FSMContext, player
     # ОТПРАВЛЯЕМ НОВОЕ СООБЩЕНИЕ ВМЕСТО РЕДАКТИРОВАНИЯ СТАРОГО
     if current_step == "waiting_for_shop_enter":
         await state.set_state(TutorialStates.waiting_for_shop_enter)
-        db.tutorial.update_tutorial_progress(player_id, "waiting_for_shop_enter")
+        tutorial_db.update_tutorial_progress(player_id, "waiting_for_shop_enter")
         
         image_path = "images/tutorial/return.jpg"
         if not os.path.exists(image_path):
@@ -1212,7 +1212,7 @@ async def return_to_last_step(callback: CallbackQuery, state: FSMContext, player
     
     elif current_step == "waiting_for_approach":
         await state.set_state(TutorialStates.waiting_for_approach)
-        db.tutorial.update_tutorial_progress(player_id, "waiting_for_approach")
+        tutorial_db.update_tutorial_progress(player_id, "waiting_for_approach")
         
         image_path = "images/tutorial/shop_entrance.jpg"
         if not os.path.exists(image_path):
@@ -1233,7 +1233,7 @@ async def return_to_last_step(callback: CallbackQuery, state: FSMContext, player
     
     elif current_step == "waiting_for_oldman_approach":
         await state.set_state(TutorialStates.waiting_for_oldman_approach)
-        db.tutorial.update_tutorial_progress(player_id, "waiting_for_oldman_approach")
+        tutorial_db.update_tutorial_progress(player_id, "waiting_for_oldman_approach")
         
         image_path = "images/tutorial/oldman_talking.jpg"
         if not os.path.exists(image_path):
@@ -1254,7 +1254,7 @@ async def return_to_last_step(callback: CallbackQuery, state: FSMContext, player
     
     elif current_step == "waiting_for_showcase":
         await state.set_state(TutorialStates.waiting_for_showcase)
-        db.tutorial.update_tutorial_progress(player_id, "waiting_for_showcase")
+        tutorial_db.update_tutorial_progress(player_id, "waiting_for_showcase")
         
         image_path = "images/tutorial/shop_showcase.jpg"
         if not os.path.exists(image_path):
@@ -1275,7 +1275,7 @@ async def return_to_last_step(callback: CallbackQuery, state: FSMContext, player
     
     elif current_step in ["in_shop_menu", "in_shop_category", "waiting_for_exit"]:
         await state.set_state(TutorialStates.in_shop_menu)
-        db.tutorial.update_tutorial_progress(player_id, "in_shop_menu")
+        tutorial_db.update_tutorial_progress(player_id, "in_shop_menu")
         
         image_path = "images/tutorial/tools_showcase.jpg"
         if not os.path.exists(image_path):
